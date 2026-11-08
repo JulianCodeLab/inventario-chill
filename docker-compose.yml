@@ -1,0 +1,50 @@
+name: inventario-chill
+
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      DB_HOST: ${DB_HOST:?Configura DB_HOST en .env con el nombre db}
+      DB_NAME: ${DB_NAME:?Configura DB_NAME en .env}
+      DB_USER: ${DB_USER:?Configura DB_USER en .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD en .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - inventario-red
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Configura DB_NAME en .env}
+      POSTGRES_USER: ${DB_USER:?Configura DB_USER en .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - inventario-red
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+networks:
+  inventario-red:
+    driver: bridge
+
+volumes:
+  postgres_data:
