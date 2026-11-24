@@ -1,0 +1,7 @@
+# Complemento para desplegar desde Jenkins sobre Docker-in-Docker.
+# Requiere Docker Compose 2.24.4 o superior por el uso de !override.
+services:
+  app:
+    image: "${IMAGE_NAME:?Define IMAGE_NAME}:${BUILD_NUMBER:?Define BUILD_NUMBER}"
+    ports: !override
+      - "0.0.0.0:5000:5000"
